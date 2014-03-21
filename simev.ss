@@ -1,7 +1,8 @@
-#lang racket
-
-;#lang scheme ;for debugging
-;(require racket/trace) ;for debugging
+;#lang racket
+(require racket/trace) ;for debugging
+(require rackunit)
+(require rackunit/text-ui)
+(require racket/include)
 
 ;README:
 ;This code is not ready to hand in because the name of function collide with those in the upload system
@@ -101,6 +102,9 @@
  )
 ;(assert  '((0)((1)(2))((3 4) (6 (6)) ((7 8)))) (apply-at-wyx ++ '((0)((1)(2))((3 4) (5 (6)) ((7 8)))) 2 1 0))
 
+
+
+
 ;###############################
 ; MAZE Constants
 ;###############################
@@ -187,7 +191,7 @@
        (w   0   0   0   w   w)
      (w   w   w   w   w   w))
  )
-(define test-result
+(define test-result2
   '(
  (turn-left turn-left turn-left turn-left turn-left turn-left turn-left 
   step put-mark 
@@ -379,4 +383,4 @@
  )
   
  ); close the whole simulate function
-(simulate (list maze (list 1 1) 'west) 'start right-hand-rule-prg2 3)
+;(simulate (list maze (list 1 1) 'west) 'start right-hand-rule-prg2 3)
