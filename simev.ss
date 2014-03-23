@@ -483,16 +483,43 @@
     )
 )
 ;always count everything eventhough it is clear it will be over the treshold
-(define (evaluate_runned_prog prog pairs treshold stack_size)
-  (if (null? pairs) '(0 0 0 0)
-      (add-result (evaluate_sim 
-                      (simulate (caar pairs) 'start prog stack_size)
-                      (cadar pairs)
-                   )
-                  (evaluate_runned_prog prog (cdr pairs)  treshold stack_size)
-      )
-   )
+;(define (evaluate_runned_prog prog pairs treshold stack_size)
+;  (if (null? pairs) '(0 0 0 0)
+;      (add-result (evaluate_sim 
+;                      (simulate (caar pairs) 'start prog stack_size)
+;                      (cadar pairs)
+;                   )
+;                  (evaluate_runned_prog prog (cdr pairs)  treshold stack_size)
+;      )
+;   )
+;)
+
+(define (evaluate_runned_prog_acc prog pairs treshold stack_size exit accu)
+  (cond
+    ((filter-over-treshold accu treshold) (exit '(-1 -1 -1 -1)))
+    ((null? pairs) accu)
+    (else (evaluate_runned_prog_acc prog 
+                          (cdr pairs)
+                          treshold 
+                          stack_size 
+                          exit 
+                          (add-result 
+                                     accu
+                                     (evaluate_sim 
+                                                  (simulate (caar pairs) 'start prog stack_size)
+                                                  (cadar pairs)
+                                      )    
+                           )
+          )
+    )
+  )
 )
+(define (evaluate_runned_prog prog pairs treshold stack_size)
+  (call-with-current-continuation
+   (lambda(exit) (evaluate_runned_prog_acc prog pairs treshold stack_size exit '(0 0 0 0)))
+  )
+)
+
 (define (evaluate_prog prog pairs treshold stack_size)
   (list
    (add-result (list 0 0 (prlen prog) 0) (evaluate_runned_prog prog pairs treshold stack_size))
@@ -508,18 +535,27 @@
     )
    )
  )
+;returns #t for values over treshold
+(define (filter-over-treshold value treshold)
+  (cond
+    ((> (car value) (car treshold)) #t)
+    ((> (cadr value) (cadr treshold)) #t)
+    ((> (caddr value) (caddr treshold)) #t)
+    ((> (cadddr value) (cadddr treshold)) #t)
+    (else #f)
+   )
+)
 
 ;post evaluation filtering - will be replaced by in time filtering
+;return #t for good results
 (define (filter-bad-predicate result treshold)
-  (cond
-    ((> (caar result) (car treshold)) #f)
-    ((> (cadar result) (cadr treshold)) #f)
-    ((> (caddar result) (caddr treshold)) #f)
-    ((> (cadddr (car result)) (cadddr treshold)) #f)
-    (else #t)
-   )
-  )
+  ;(>= (caar result) 0) detects error type result - ie. those over treshold
+  (and (not (filter-over-treshold (car result) treshold)) (>= (caar result) 0))
+)
+
+;removes all bad results (those over treshold or error type result - negative number)
 (define (filter-bad results treshold)
+  (display results)
   (my-filter (lambda(x) (filter-bad-predicate x treshold)) results)
  )
 (define (compare-by-value resA resB)
