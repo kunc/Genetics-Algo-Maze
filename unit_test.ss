@@ -3,11 +3,18 @@
 (require rackunit/text-ui)
 (require racket/include)
 (include "simev.ss")
-(assert 1 1)
+(require racket/trace)
 (define minimal-maze
   '(
     (w   w   w)
       (w   0   w)
+    (w   w   w)
+    )
+  )
+(define minimal-maze_5marks
+  '(
+    (w   w   w)
+      (w   5   w)
     (w   w   w)
     )
   )
@@ -17,6 +24,33 @@
       (w   0   0   w   w)
     (w   0   0   0   w)
       (w   0   0   w   w)
+    (w   w   w   w   w)
+    )
+  )
+(define minimal-maze_with_space_marks_1
+  '(
+    (w   w   w   w   w)
+      (w   1   2   w   w)
+    (w   0   0   0   w)
+      (w   0   5   w   w)
+    (w   w   w   w   w)
+    )
+  )
+(define minimal-maze_with_space_marks_2
+  '(
+    (w   w   w   w   w)
+      (w   1   1   w   w)
+    (w   1   1   1   w)
+      (w   1   1   w   w)
+    (w   w   w   w   w)
+    )
+  )
+(define minimal-maze_with_space_marks_3
+  '(
+    (w   w   w   w   w)
+      (w   4   0   w   w)
+    (w   0   0   0   w)
+      (w   0   4   w   w)
     (w   w   w   w   w)
     )
   )
@@ -71,6 +105,59 @@
 )
 
 
+;Task 2
+(define example1_prgs
+  '(
+   ( 
+      (procedure start
+         (turn-right (if wall? (turn-left 
+             (if wall? (turn-left (if wall? turn-left step)) step)) step)
+                 put-mark start )
+      )   
+      (procedure turn-right (turn-left turn-left turn-left turn-left turn-left))
+  )
+  (
+      (procedure start  (put-mark (if wall? turn-left step) start))
+  )
+  (
+      (procedure start (step step step put-mark))
+  )
+ )
+)
+(define example1_pairs
+'(
+  (
+   (((w w w w w w) 
+      (w 0 w 0 w w) 
+     (w 1 w 0 0 w) 
+      (w 1 0 0 w w) 
+     (w w w w w w)) 
+     (1 3) southwest)
+
+   (((w w w w w w) 
+      (w 0 w 0 w w) 
+     (w 0 w 0 0 w) 
+      (w 0 0 0 w w) 
+     (w w w w w w)) 
+     (1 1) northeast)
+   )
+   (
+   (((w w w w w w) 
+      (w 0 w 0 w w) 
+     (w 0 w 2 0 w) 
+      (w 1 3 0 w w) 
+     (w w w w w w)) 
+     (3 3) northwest)
+
+   (((w w w w w w) 
+      (w 0 w 0 w w) 
+     (w 0 w 0 0 w) 
+      (w 0 0 0 w w) 
+     (w w w w w w)) 
+     (1 1) northeast)
+  ))
+ )
+  
 ;first test are based on Jakub Kulhan's code:
 ;https://gist.github.com/jakubkulhan/9402478
 
@@ -266,7 +353,285 @@
     
     
     )
+   (test-suite
+    "evaluate"
+    (test-suite
+     "compare"
+     (test-case "empty compare"
+                (check-equal?
+                 (comp_list '() '())
+                 #f
+                )
+               )
+     (test-case "first element compare"
+                (check-equal?
+                 (comp_list '(3) '(2))
+                 #f
+                )
+               )
+     (test-case "simple compare"
+                (check-equal?
+                 (comp_list '(1 2 3) '(1 2 3))
+                 #f
+                )
+               )
+     (test-case "simple compare2"
+                (check-equal?
+                 (comp_list '(2 2 3) '(1 2 3))
+                 #f
+                )
+               )
+     (test-case "not first element compare"
+                (check-equal?
+                 (comp_list '(1 2 3 4) '(1 2 3 3))
+                 #f
+                )
+               )
+     (test-case "not first element compare 2"
+                (check-equal?
+                 (comp_list '(1 2 3 3) '(1 2 3 4))
+                 #t
+                )
+               )
+     (test-case "result comparisonnot first element compare 2"
+                (check-equal?
+                 (compare-by-value '((1 2 3 3) apple) '((1 2 3 4) orange))
+                 #t
+                )
+               )
+     (test-case "not first element compare 2"
+                (check-equal?
+                 (compare-by-value '((1 2 4 4) apple) '((1 2 3 4) orange))
+                 #f
+                )
+               )
+    )
+    (test-suite
+     "sort"
+     (test-case "empty list"
+               (check-equal?
+                (qsort  <= '())
+                          '()
+                )
+               )
+     (test-case "simple list"
+               (check-equal?
+                (qsort  <= '(2 3 1 5 4 6 8 7))
+                          '(1 2 3 4 5 6 7 8)
+                )
+               )
+    )
+    (test-suite
+     "manhattan-maze-dist"
+     (test-case "pseudo maze"
+               (check-equal?
+                (manhattan-dist  '(0) '(1))
+                          1
+                )
+      )
+      (test-case "pseudo maze 2"
+               (check-equal?
+                (manhattan-dist  '(0 0 0) '(1 1 1))
+                          3
+                )
+      )
+      (test-case "pseudo maze 3"
+               (check-equal?
+                (manhattan-dist  '(0 0 w) '(1 1 w))
+                          2
+                )
+      )
+       (test-case "pseudo maze 4"
+               (check-equal?
+                (manhattan-dist  '(w 0 w) '(w 1 w))
+                          1
+                )
+      )
+       (test-case "pseudo maze 4 - symmetry"
+               (check-equal?
+                (manhattan-dist  '(w 1 w) '(w 0 w))
+                          1
+                )
+      )
+     (test-case "zero distance"
+               (check-equal?
+                (manhattan-dist  minimal-maze minimal-maze)
+                          0
+                )
+      )
+     (test-case "5 distance"
+               (check-equal?
+                (manhattan-dist  minimal-maze_5marks minimal-maze)
+                          5
+                )
+               )
+     (test-case "more marks"
+               (check-equal?
+                (manhattan-dist  minimal-maze_with_space_marks_1 minimal-maze_with_space_marks_2)
+                          9
+                )
+      )
+     (test-case "more marks"
+               (check-equal?
+                (manhattan-dist  minimal-maze_with_space_marks_3 minimal-maze_with_space_marks_2)
+                          11
+                )
+      )
+    )
+    (test-suite
+     "configuration distance"
+     (test-case "zero distance"
+               (check-equal?
+                (config-dist '((()) (3 2) west) '((()) (3 2) west))
+                0
+                )
+     )
+     (test-case "position distance"
+               (check-equal?
+                (config-dist '((()) (2 3) west) '((()) (3 2) west))
+                2
+                )
+     )
+     (test-case "diff. orientation"
+               (check-equal?
+                (config-dist '((()) (3 2) west) '((()) (3 2) east))
+                1
+                )
+     )
+     (test-case "diff. orientation + position"
+               (check-equal?
+                (config-dist '((()) (0 0) east) '((()) (3 2) west))
+                6
+                )
+     )
+    )
+    (test-suite
+     "program length distance"
+     (test-case "zero len"
+               (check-equal?
+                (prlen '())
+                0
+                )
+     )
+     (test-case "zero len 2 - pseudoprogram"
+               (check-equal?
+                (prlen '(procedure if ))
+                0
+                )
+     )
+     (test-case "simple nested -  pseudoprogram"
+               (check-equal?
+                (prlen '((procedure start (step step chocolate))(procedure chocolate (step turn-left))))
+                7
+                )
+     )
+     (test-case "example 1"
+               (check-equal?
+                (prlen '(procedure start (step step step put-mark)))
+                5
+                )
+     )
+     (test-case "example 2 "
+               (check-equal?
+                (prlen '(procedure start  (put-mark (if wall? turn-left step) start)))
+                6
+                )
+     )
+     )
+     (test-suite
+      "counting elements"
+      (test-case "zero elements"
+               (check-equal?
+                (count_ele '())
+                0
+                )
+       )
+      (test-case "5elements"
+               (check-equal?
+                (count_ele '(1 apple 3 Alice 5))
+                5
+                )
+       )
+     )
+     (test-suite
+      "evaluate prog"
+      (test-case "1 maze, simple procedure - runned_prog"
+               (check-equal?
+                (evaluate_runned_prog '((procedure start  (put-mark (if wall? turn-left step) start)))
+                        '(((((w w w w w w) 
+                             (w 0 w 0 w w) 
+                             (w 1 w 0 0 w) 
+                             (w 1 0 0 w w) 
+                             (w w w w w w)) 
+                            (1 3) southwest) 
+                           (((w w w w w w) 
+                             (w 0 w 0 w w) 
+                             (w 0 w 0 0 w) 
+                             (w 0 0 0 w w) 
+                             (w w w w w w)) 
+                            (1 1) northeast)
+                           ))
+                        5
+                        5
+                        
+                        )
+                '(7 4 0 10)
+                )
+               )
+     (test-case "2 mazes, 1 simple procedure"
+               (check-equal?
+                (evaluate_prog '((procedure start  (put-mark (if wall? turn-left step) start)))
+                        '(((((w w w w w w) 
+                             (w 0 w 0 w w) 
+                             (w 1 w 0 0 w) 
+                             (w 1 0 0 w w) 
+                             (w w w w w w)) 
+                            (1 3) southwest) 
+                           (((w w w w w w) 
+                             (w 0 w 0 w w) 
+                             (w 0 w 0 0 w) 
+                             (w 0 0 0 w w) 
+                             (w w w w w w)) 
+                            (1 1) northeast)
+                           )
+                          (
+                           (((w w w w w w) 
+                             (w 0 w 0 w w) 
+                             (w 0 w 2 0 w) 
+                             (w 1 3 0 w w) 
+                             (w w w w w w)) 
+                            (3 3) northwest)
+
+                           (((w w w w w w) 
+                             (w 0 w 0 w w) 
+                             (w 0 w 0 0 w) 
+                             (w 0 0 0 w w) 
+                             (w w w w w w)) 
+                            (1 1) northeast)
+                           ))
+                        5
+                        5
+                        
+                        )
+                '((18 8 6 20)((procedure start  (put-mark (if wall? turn-left step) start))))
+                )
+               )
+    )
+     (test-suite
+      "evaluate function"
+     (test-case "evaluate example 1"
+                (check-equal?
+                 (evaluate example1_prgs example1_pairs  '(20 20 20 20)  5)
+                 '(
+                   ((8 7 5 1) ((procedure start (step step step put-mark)))) 
+                   ((18 8 6 20) ((procedure start (put-mark (if wall? turn-left step) start))))
+                   )
+                 )
+     )
+     )
+    )
    )
   )
- 
 (run-tests maze-tests)
+
+                        

@@ -1,9 +1,3 @@
-;#lang racket
-(require racket/trace) ;for debugging
-(require rackunit)
-(require rackunit/text-ui)
-(require racket/include)
-
 ;README:
 ;This code is not ready to hand in because the name of function collide with those in the upload system
 ;it is function version of Task 1.
@@ -20,11 +14,11 @@
 )
 
 ;at - returns the ith element of a list
-(define (at list i)
+(define (at lst i)
   (cond
-    ((null? list) '())
-    ((= i 0) (car list))
-    (else (at (cdr list) (- i 1)))
+    ((null? lst) '())
+    ((= i 0) (car lst))
+    (else (at (cdr lst) (- i 1)))
    )
 )
 ;(assert 5 (at '(0 1 2 3 4 5 6 7 8 9) 5))
@@ -76,12 +70,12 @@
  )
 ;(assert '(1 1) (l-+ '(2 0)))
 ;apply-at
-(define (apply-at function list i)
+(define (apply-at function lst i)
   (cond
-    ((null? list) '())
-    ((= i 0) (cons (function (car list)) (cdr list)))
+    ((null? lst) '())
+    ((= i 0) (cons (function (car lst)) (cdr lst)))
     (else
-       (cons (car list) (apply-at function (cdr list) (-- i)))
+       (cons (car lst) (apply-at function (cdr lst) (-- i)))
      )
    )
  )
@@ -102,7 +96,14 @@
  )
 ;(assert  '((0)((1)(2))((3 4) (6 (6)) ((7 8)))) (apply-at-wyx ++ '((0)((1)(2))((3 4) (5 (6)) ((7 8)))) 2 1 0))
 
-
+;general filter
+(define (my-filter predikat lst)
+  (cond
+    ((null? lst) '())
+    ((predikat (car lst)) (cons (car lst) (my-filter predikat (cdr lst))))
+    (else (my-filter predikat (cdr lst)))
+   )
+ )
 
 
 ;###############################
@@ -209,11 +210,11 @@
 ;Functions
 ;#############################
 ;getters
-;get-maze
-(define (get-maze state)
+;get-maz
+(define (get-maz state)
   (car state)
   )
-;(assert maze (get-maze get-initial-state))
+;(assert maze (get-maz get-initial-state))
 ;get-pos
 (define (get-pos state)
   (cadr state)
@@ -239,19 +240,19 @@
 ;commands - return state
 (define (turn-left state)
   (cond
-    ((eqv? 'west      (get-ori state))(list (get-maze state) (get-pos state) 'southwest (cons 'turn-left (get-seq state)) (get-cod state)))
-    ((eqv? 'southwest (get-ori state))(list (get-maze state) (get-pos state) 'southeast (cons 'turn-left (get-seq state)) (get-cod state)))
-    ((eqv? 'southeast (get-ori state))(list (get-maze state) (get-pos state) 'east      (cons 'turn-left (get-seq state)) (get-cod state)))
-    ((eqv? 'east      (get-ori state))(list (get-maze state) (get-pos state) 'northeast (cons 'turn-left (get-seq state)) (get-cod state)))
-    ((eqv? 'northeast (get-ori state))(list (get-maze state) (get-pos state) 'northwest (cons 'turn-left (get-seq state)) (get-cod state)))
-    ((eqv? 'northwest (get-ori state))(list (get-maze state) (get-pos state) 'west      (cons 'turn-left (get-seq state)) (get-cod state)))
+    ((eqv? 'west      (get-ori state))(list (get-maz state) (get-pos state) 'southwest (cons 'turn-left (get-seq state)) (get-cod state)))
+    ((eqv? 'southwest (get-ori state))(list (get-maz state) (get-pos state) 'southeast (cons 'turn-left (get-seq state)) (get-cod state)))
+    ((eqv? 'southeast (get-ori state))(list (get-maz state) (get-pos state) 'east      (cons 'turn-left (get-seq state)) (get-cod state)))
+    ((eqv? 'east      (get-ori state))(list (get-maz state) (get-pos state) 'northeast (cons 'turn-left (get-seq state)) (get-cod state)))
+    ((eqv? 'northeast (get-ori state))(list (get-maz state) (get-pos state) 'northwest (cons 'turn-left (get-seq state)) (get-cod state)))
+    ((eqv? 'northwest (get-ori state))(list (get-maz state) (get-pos state) 'west      (cons 'turn-left (get-seq state)) (get-cod state)))
    )
  )
 
 ;put-mark
 (define (put-mark state)
   (list 
-   (apply-at-yx ++ (get-maze state) (cadr (get-pos state)) (car (get-pos state))) 
+   (apply-at-yx ++ (get-maz state) (cadr (get-pos state)) (car (get-pos state))) 
    (get-pos state)
    (get-ori state)
    (cons 'put-mark (get-seq state))
@@ -262,7 +263,7 @@
 ;get-mark
 (define (get-mark state)
   (list 
-   (apply-at-yx -- (get-maze state) (cadr (get-pos state)) (car (get-pos state))) 
+   (apply-at-yx -- (get-maz state) (cadr (get-pos state)) (car (get-pos state))) 
    (get-pos state)
    (get-ori state)
    (cons 'get-mark (get-seq state))
@@ -274,22 +275,22 @@
 (define (step state)
   (let ((o (get-ori state)) (s (cons 'step (get-seq state)))(p (get-pos state)) (c (get-cod state)))
     (cond
-      ((eqv? 'west o) (list (get-maze state) (apply-at -- p 0) o s c))
-      ((eqv? 'east o) (list (get-maze state) (apply-at ++ p 0) o s c))
+      ((eqv? 'west o) (list (get-maz state) (apply-at -- p 0) o s c))
+      ((eqv? 'east o) (list (get-maz state) (apply-at ++ p 0) o s c))
       ((even? (at p 1))
          (cond
-           ((eqv? 'northwest o) (list (get-maze state) (l-- p)           o s c))
-           ((eqv? 'northeast o) (list (get-maze state) (apply-at -- p 1) o s c))
-           ((eqv? 'southwest o) (list (get-maze state) (l-+ p)           o s c))
-           ((eqv? 'southeast o) (list (get-maze state) (apply-at ++ p 1) o s c))
+           ((eqv? 'northwest o) (list (get-maz state) (l-- p)           o s c))
+           ((eqv? 'northeast o) (list (get-maz state) (apply-at -- p 1) o s c))
+           ((eqv? 'southwest o) (list (get-maz state) (l-+ p)           o s c))
+           ((eqv? 'southeast o) (list (get-maz state) (apply-at ++ p 1) o s c))
           )
       )
       (else
         (cond
-           ((eqv? 'northwest o) (list (get-maze state) (apply-at -- p 1) o s c))
-           ((eqv? 'northeast o) (list (get-maze state) (l+- p)           o s c))
-           ((eqv? 'southwest o) (list (get-maze state) (apply-at ++ p 1) o s c))
-           ((eqv? 'southeast o) (list (get-maze state) (l++ p)           o s c))
+           ((eqv? 'northwest o) (list (get-maz state) (apply-at -- p 1) o s c))
+           ((eqv? 'northeast o) (list (get-maz state) (l+- p)           o s c))
+           ((eqv? 'southwest o) (list (get-maz state) (apply-at ++ p 1) o s c))
+           ((eqv? 'southeast o) (list (get-maz state) (l++ p)           o s c))
           )
         )
      )
@@ -310,7 +311,7 @@
 
 ;MARK?
 (define (if-mark state)
-  (if (< 0 (at-yx (get-maze state) (cadr (get-pos state)) (car (get-pos state)))) #t #f)
+  (if (< 0 (at-yx (get-maz state) (cadr (get-pos state)) (car (get-pos state)))) #t #f)
  )
 
 ;WEST?
@@ -384,3 +385,204 @@
   
  ); close the whole simulate function
 ;(simulate (list maze (list 1 1) 'west) 'start right-hand-rule-prg2 3)
+
+
+;;quicksort
+(define (rozdel comparator pivot s)
+  (if (null? s) '(() . ()) ;;. cons - seznam + zbytek
+  (let* ( ;;else
+          (v (rozdel comparator pivot (cdr s)))
+          (a (car v)) ;;mensi nez pivot
+          (b (cdr v)) ;;vetsi nez pivot
+          (p (car s))) ;;prvni cislo v puvodnim seznamu - to se nedostalo dal do rekurze
+    (if (comparator p pivot) ;; p comparator pivot
+        (cons (cons p a) b) ;; "mensi" pripoji se pred
+        (cons a (cons p b))))))
+
+(define (qsort comparator s)
+  (cond 
+    ((null? s) s)
+    ((null? (cdr s)) s)
+    (else (let* (
+                  (pivot (car s)) ;;prvni prvek na pivot
+                  (r (rozdel comparator pivot (cdr s))) ;;zbytek rozdelit
+                  (a (car r)) ;;prvni seznam z rozdeleni
+                  (b (cdr r)) ;;druhy seznam z rozdeleni
+                  (sa (qsort comparator a))
+                  (sb (qsort comparator b))
+                  )
+            (append sa (cons pivot sb))))))
+
+; lstA < lstB --> True
+(define (comp_list lstA lstB)
+  (cond
+    ((or (null? lstA) (null? lstB)) #f)
+    ((> (car lstA) (car lstB)) #f)
+    ((< (car lstA) (car lstB)) #t)
+    (else (comp_list (cdr lstA) (cdr lstB)))
+  )
+)
+
+;manhattan distance of two maze
+(define (manhattan-dist mazeA mazeB)
+  (cond
+    ((or (null? mazeA) (null? mazeB)) 0)
+    ((and (number? (car mazeA)) (number? (car mazeB)))
+       (+ (abs (- (car mazeA) (car mazeB))) (manhattan-dist (cdr mazeA) (cdr mazeB)))
+    )
+    ((and (list? (car mazeA)) (list? (car mazeB)))
+     (+ (manhattan-dist (car mazeA) (car mazeB)) (manhattan-dist (cdr mazeA) (cdr mazeB)))
+    )
+    (else (manhattan-dist (cdr mazeA) (cdr mazeB)))
+  )
+)
+
+;configuration distance
+(define (config-dist confA confB)
+  (if (equal? (caddr confA) (caddr confB)) 
+      (+ 
+       (abs (- (caadr confA) (caadr confB)))
+       (abs (- (cadadr confA) (cadadr confB)))
+      )
+      (+ 
+       1
+       (abs (- (caadr confA) (caadr confB)))
+       (abs (- (cadadr confA) (cadadr confB)))
+      )
+    )
+ )
+
+;program lenght
+(define (prlen prog)
+  (cond
+    ((null? prog) 0)
+    ((list? (car prog)) (+ (prlen (car prog)) (prlen (cdr prog))))
+    ((or (equal? 'if (car prog)) (equal? 'procedure (car prog))) (prlen (cdr prog)))
+    (else (++ (prlen (cdr prog))))
+   )
+)
+
+;number of steps - count number of elements in list
+(define (count_ele lst)
+  (if (null? lst) 0 (++ (count_ele (cdr lst))))
+)
+
+;;helper function to summing up (x1,x2,x3,x4) + (y1,y2,y3,y4)= (x1+y1, x2+y2, x3, x4 + y3)
+(define (add-result cumulative_res new_res)
+  (list (+ (car cumulative_res) (car new_res))
+        (+ (cadr cumulative_res) (cadr new_res))
+        (caddr cumulative_res)
+        (+ (cadddr cumulative_res) (cadddr new_res))
+   )
+)
+(define (evaluate_sim sim_res desired_state)
+    (list (manhattan-dist (caadr sim_res) (car desired_state))
+          (config-dist (cadr sim_res) desired_state)
+          0
+          (count_ele (car sim_res))
+    )
+)
+;always count everything eventhough it is clear it will be over the treshold
+(define (evaluate_runned_prog prog pairs treshold stack_size)
+  (if (null? pairs) '(0 0 0 0)
+      (add-result (evaluate_sim 
+                      (simulate (caar pairs) 'start prog stack_size)
+                      (cadar pairs)
+                   )
+                  (evaluate_runned_prog prog (cdr pairs)  treshold stack_size)
+      )
+   )
+)
+(define (evaluate_prog prog pairs treshold stack_size)
+  (list
+   (add-result (list 0 0 (prlen prog) 0) (evaluate_runned_prog prog pairs treshold stack_size))
+   prog
+  )
+)
+
+(define (evaluate_multiple_progs prgs pairs treshold stack_size)
+  (cond
+    ((null? prgs) '())
+    (else
+     (cons (evaluate_prog (car prgs) pairs treshold stack_size) (evaluate_multiple_progs (cdr prgs) pairs treshold stack_size))
+    )
+   )
+ )
+
+;post evaluation filtering - will be replaced by in time filtering
+(define (filter-bad-predicate result treshold)
+  (cond
+    ((> (caar result) (car treshold)) #f)
+    ((> (cadar result) (cadr treshold)) #f)
+    ((> (caddar result) (caddr treshold)) #f)
+    ((> (cadddr (car result)) (cadddr treshold)) #f)
+    (else #t)
+   )
+  )
+(define (filter-bad results treshold)
+  (my-filter (lambda(x) (filter-bad-predicate x treshold)) results)
+ )
+(define (compare-by-value resA resB)
+  (comp_list (car resA) (car resB))
+ )
+
+(define (evaluate prgs pairs treshold stack_size)
+  (qsort compare-by-value (filter-bad (evaluate_multiple_progs prgs pairs treshold stack_size) treshold))
+)
+
+
+
+
+(define prgs
+'(
+   ( 
+      (procedure start
+         (turn-right (if wall? (turn-left 
+             (if wall? (turn-left (if wall? turn-left step)) step)) step)
+                 put-mark start )
+      )   
+      (procedure turn-right (turn-left turn-left turn-left turn-left turn-left))
+  )
+  (
+      (procedure start  (put-mark (if wall? turn-left step) start))
+  )
+  (
+      (procedure start (step step step put-mark))
+  )
+)
+)
+
+
+(define pairs
+'(
+  (
+   (((w w w w w w) 
+      (w 0 w 0 w w) 
+     (w 1 w 0 0 w) 
+      (w 1 0 0 w w) 
+     (w w w w w w)) 
+     (1 3) southwest)
+
+   (((w w w w w w) 
+      (w 0 w 0 w w) 
+     (w 0 w 0 0 w) 
+      (w 0 0 0 w w) 
+     (w w w w w w)) 
+     (1 1) northeast)
+   )
+   (
+   (((w w w w w w) 
+      (w 0 w 0 w w) 
+     (w 0 w 2 0 w) 
+      (w 1 3 0 w w) 
+     (w w w w w w)) 
+     (3 3) northwest)
+
+   (((w w w w w w) 
+      (w 0 w 0 w w) 
+     (w 0 w 0 0 w) 
+      (w 0 0 0 w w) 
+     (w w w w w w)) 
+     (1 1) northeast)
+  ))
+ )
