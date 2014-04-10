@@ -124,6 +124,7 @@
      (first)
      ;fail code
      0
+     0
      )
   )
 (define get-test-state
@@ -140,6 +141,7 @@
      ;action-list
      (first)
      ;fail code
+     0
      0
      )
   )
@@ -236,16 +238,21 @@
 (define (get-cod state)
   (at state 4)
 )
+
+;get-number of commands
+(define (get-count state)
+  (at state 5)
+)
 ;##################
 ;commands - return state
 (define (turn-left state)
   (cond
-    ((eqv? 'west      (get-ori state))(list (get-maz state) (get-pos state) 'southwest (cons 'turn-left (get-seq state)) (get-cod state)))
-    ((eqv? 'southwest (get-ori state))(list (get-maz state) (get-pos state) 'southeast (cons 'turn-left (get-seq state)) (get-cod state)))
-    ((eqv? 'southeast (get-ori state))(list (get-maz state) (get-pos state) 'east      (cons 'turn-left (get-seq state)) (get-cod state)))
-    ((eqv? 'east      (get-ori state))(list (get-maz state) (get-pos state) 'northeast (cons 'turn-left (get-seq state)) (get-cod state)))
-    ((eqv? 'northeast (get-ori state))(list (get-maz state) (get-pos state) 'northwest (cons 'turn-left (get-seq state)) (get-cod state)))
-    ((eqv? 'northwest (get-ori state))(list (get-maz state) (get-pos state) 'west      (cons 'turn-left (get-seq state)) (get-cod state)))
+    ((eqv? 'west      (get-ori state))(list (get-maz state) (get-pos state) 'southwest (cons 'turn-left (get-seq state)) (get-cod state) (++ (get-count state))))
+    ((eqv? 'southwest (get-ori state))(list (get-maz state) (get-pos state) 'southeast (cons 'turn-left (get-seq state)) (get-cod state) (++ (get-count state))))
+    ((eqv? 'southeast (get-ori state))(list (get-maz state) (get-pos state) 'east      (cons 'turn-left (get-seq state)) (get-cod state) (++ (get-count state))))
+    ((eqv? 'east      (get-ori state))(list (get-maz state) (get-pos state) 'northeast (cons 'turn-left (get-seq state)) (get-cod state) (++ (get-count state))))
+    ((eqv? 'northeast (get-ori state))(list (get-maz state) (get-pos state) 'northwest (cons 'turn-left (get-seq state)) (get-cod state) (++ (get-count state))))
+    ((eqv? 'northwest (get-ori state))(list (get-maz state) (get-pos state) 'west      (cons 'turn-left (get-seq state)) (get-cod state) (++ (get-count state))))
    )
  )
 
@@ -257,6 +264,7 @@
    (get-ori state)
    (cons 'put-mark (get-seq state))
    (get-cod state)
+   (++ (get-count state))
   )
  )
 
@@ -268,29 +276,30 @@
    (get-ori state)
    (cons 'get-mark (get-seq state))
    (get-cod state)
+   (++ (get-count state))
   )
  )
 
 ;step
 (define (step state)
-  (let ((o (get-ori state)) (s (cons 'step (get-seq state)))(p (get-pos state)) (c (get-cod state)))
+  (let ((o (get-ori state)) (s (cons 'step (get-seq state)))(p (get-pos state)) (c (get-cod state)) (n (++ (get-count state))))
     (cond
-      ((eqv? 'west o) (list (get-maz state) (apply-at -- p 0) o s c))
-      ((eqv? 'east o) (list (get-maz state) (apply-at ++ p 0) o s c))
+      ((eqv? 'west o) (list (get-maz state) (apply-at -- p 0) o s c n))
+      ((eqv? 'east o) (list (get-maz state) (apply-at ++ p 0) o s c n))
       ((even? (at p 1))
          (cond
-           ((eqv? 'northwest o) (list (get-maz state) (l-- p)           o s c))
-           ((eqv? 'northeast o) (list (get-maz state) (apply-at -- p 1) o s c))
-           ((eqv? 'southwest o) (list (get-maz state) (l-+ p)           o s c))
-           ((eqv? 'southeast o) (list (get-maz state) (apply-at ++ p 1) o s c))
+           ((eqv? 'northwest o) (list (get-maz state) (l-- p)           o s c n))
+           ((eqv? 'northeast o) (list (get-maz state) (apply-at -- p 1) o s c n))
+           ((eqv? 'southwest o) (list (get-maz state) (l-+ p)           o s c n))
+           ((eqv? 'southeast o) (list (get-maz state) (apply-at ++ p 1) o s c n))
           )
       )
       (else
         (cond
-           ((eqv? 'northwest o) (list (get-maz state) (apply-at -- p 1) o s c))
-           ((eqv? 'northeast o) (list (get-maz state) (l+- p)           o s c))
-           ((eqv? 'southwest o) (list (get-maz state) (apply-at ++ p 1) o s c))
-           ((eqv? 'southeast o) (list (get-maz state) (l++ p)           o s c))
+           ((eqv? 'northwest o) (list (get-maz state) (apply-at -- p 1) o s c n))
+           ((eqv? 'northeast o) (list (get-maz state) (l+- p)           o s c n))
+           ((eqv? 'southwest o) (list (get-maz state) (apply-at ++ p 1) o s c n))
+           ((eqv? 'southeast o) (list (get-maz state) (l++ p)           o s c n))
           )
         )
      )
@@ -352,7 +361,7 @@
     ((<= 1 (at state 4)) state)
     ;limit overdrawn, do nothing (and maybe raise an error)
     ((< limit 0) (apply-at ++ state 4))
-    
+   
     
     ;if it is list - it may an if branch or another list of instuctions
     ((list? expr)
@@ -378,13 +387,66 @@
     (else (main state (get-procedure expr program) program (-- limit)))
   )
 )
+
+
+;main function with a treshold on number of action - derived fro
+;treshold is a number and if the number of actions is higher, the simulation will stop
+(define (main_treshold state expr program limit treshold exit)
+  (cond
+    ;nothing to do
+    ((null? expr) state)
+    ;failed?
+    ((<= 1 (at state 4)) state)
+    ;limit overdrawn, do nothing (and maybe raise an error)
+    ((< limit 0) (apply-at ++ state 4))
+   
+    ;over the treshold
+    ((> (at state 5) treshold) (exit -1))
+    
+    ;if it is list - it may an if branch or another list of instuctions
+    ((list? expr)
+       (cond
+         ((eqv? 'if (car expr)) (main_treshold state (get-if expr state) program limit treshold exit))
+         (else (main_treshold (main_treshold state (car expr) program limit treshold exit) (cdr expr) program limit treshold exit))
+        )
+     )
+    ;get-mark
+    ((eqv? 'get-mark expr) 
+     (if (if-mark state) (get-mark state) state))
+    ;put-mark
+    ((eqv? 'put-mark expr) (put-mark state))
+    ;step -
+    ((eqv? 'step expr)
+     (cond
+       ((if-wall state) (apply-at ++ state 4)) ;if wrong step, raise fail state
+       (else (step state))
+     ))
+    ;turn-left
+    ((eqv? 'turn-left expr) (turn-left state))
+    ;nothing from above? - it is a procedure, find it and do it
+    (else (main_treshold state (get-procedure expr program) program (-- limit) treshold exit))
+  )
+)
 (define (simulate state expr program limit)
-(let ((result (main (list (car state) (cadr state) (caddr state) '(first) 0) expr program limit)))
+(let ((result (main (list (car state) (cadr state) (caddr state) '(first) 0 0) expr program limit)))
          (list (cdr (reverse (at result 3))) (list (car result) (cadr result) (caddr result)))
+ ))
+  
+(define (simulate_treshold state expr program limit treshold)
+(let ((result 
+       (call-with-current-continuation
+                  (lambda(exit) 
+                       (main_treshold (list (car state) (cadr state) (caddr state) '(first) 0 0) expr program limit treshold exit))
+                  )
+       )
+  )
+         (if (number? result) result 
+           (list (cdr (reverse (at result 3))) (list (car result) (cadr result) (caddr result)))
+         )
  )
   
  ); close the whole simulate function
-;(simulate (list maze (list 1 1) 'west) 'start right-hand-rule-prg2 3)
+;(simulate_treshold (list maze (list 1 1) 'west) 'start right-hand-rule-prg2 3 200)
 
 
 ;;quicksort
@@ -476,11 +538,13 @@
    )
 )
 (define (evaluate_sim sim_res desired_state)
+  (if (number? sim_res) sim_res
     (list (manhattan-dist (caadr sim_res) (car desired_state))
           (config-dist (cadr sim_res) desired_state)
           0
           (count_ele (car sim_res))
     )
+   )
 )
 ;always count everything eventhough it is clear it will be over the treshold
 ;(define (evaluate_runned_prog prog pairs treshold stack_size)
@@ -495,25 +559,36 @@
 ;)
 
 (define (evaluate_runned_prog_acc prog pairs treshold stack_size exit accu)
+  
   (cond
     ((filter-over-treshold accu treshold) (exit '(-1 -1 -1 -1)))
     ((null? pairs) accu)
-    (else (evaluate_runned_prog_acc prog 
+    (else (let* ((sim_res (evaluate_sim 
+                    (simulate_treshold (caar pairs) 'start prog stack_size (cadddr treshold))
+                     (cadar pairs)
+                  )
+         ))
+   
+      (cond
+        ((and (number? sim_res) (> 0 sim_res)) (exit '(-1 -1 -1 -1))) 
+        (else (evaluate_runned_prog_acc prog 
                           (cdr pairs)
                           treshold 
                           stack_size 
                           exit 
                           (add-result 
                                      accu
-                                     (evaluate_sim 
-                                                  (simulate (caar pairs) 'start prog stack_size)
-                                                  (cadar pairs)
-                                      )    
+                                     sim_res
+                                         
                            )
-          )
-    )
+           )
+         )
+       ) 
+     )
+            )
   )
 )
+  
 (define (evaluate_runned_prog prog pairs treshold stack_size)
   (call-with-current-continuation
    (lambda(exit) (evaluate_runned_prog_acc prog pairs treshold stack_size exit '(0 0 0 0)))
@@ -555,7 +630,6 @@
 
 ;removes all bad results (those over treshold or error type result - negative number)
 (define (filter-bad results treshold)
-  (display results)
   (my-filter (lambda(x) (filter-bad-predicate x treshold)) results)
  )
 (define (compare-by-value resA resB)
@@ -569,21 +643,29 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 (define prgs
 '(
    ( 
       (procedure start
          (turn-right (if wall? (turn-left 
-             (if wall? (turn-left (if wall? turn-left step)) step)) step)
+             (if wall? (turn-left (if wall? (turn-left (if wall? (turn-left (if wall? turn-left step)) step)) step)) step)) step)
                  put-mark start )
       )   
       (procedure turn-right (turn-left turn-left turn-left turn-left turn-left))
-  )
-  (
-      (procedure start  (put-mark (if wall? turn-left step) start))
-  )
-  (
-      (procedure start (step step step put-mark))
   )
 )
 )
@@ -593,32 +675,36 @@
 '(
   (
    (((w w w w w w) 
-      (w 0 w 0 w w) 
+      (w 0 0 0 0 w) 
      (w 1 w 0 0 w) 
-      (w 1 0 0 w w) 
+      (w 1 0 0 0 w) 
      (w w w w w w)) 
-     (1 3) southwest)
+     (1 3) southeast)
 
    (((w w w w w w) 
-      (w 0 w 0 w w) 
+      (w 0 0 0 0 w) 
      (w 0 w 0 0 w) 
-      (w 0 0 0 w w) 
+      (w 0 0 0 0 w) 
      (w w w w w w)) 
      (1 1) northeast)
    )
    (
    (((w w w w w w) 
-      (w 0 w 0 w w) 
-     (w 0 w 2 0 w) 
-      (w 1 3 0 w w) 
+      (w 0 0 0 0 w) 
+     (w 0 0 2 0 w) 
+      (w 1 3 0 0 w) 
      (w w w w w w)) 
      (3 3) northwest)
 
    (((w w w w w w) 
-      (w 0 w 0 w w) 
-     (w 0 w 0 0 w) 
-      (w 0 0 0 w w) 
+      (w 0 0 0 0 w) 
+     (w 0 0 0 0 w) 
+      (w 0 0 0 0 w) 
      (w w w w w w)) 
-     (1 1) northeast)
+     (1 1) northwest)
   ))
  )
+
+
+
+
